@@ -108,7 +108,7 @@ jobs:
             tar zxvf openssl-1.0.2t.tar.gz
 
             cd openssl-1.0.2t
-            ./Configure --prefix=$DEPS_PREFIX os/compiler:$OPENSSL_TARGET
+            ./Configure -fPIC --prefix=$DEPS_PREFIX os/compiler:$OPENSSL_TARGET
             make CC="$OPENSSL_TARGET-gcc" AR="$OPENSSL_TARGET-ar r" RANLIB="$OPENSSL_TARGET-ranlib"
             make install
             cd ..
