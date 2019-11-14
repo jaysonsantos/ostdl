@@ -1,3 +1,4 @@
+# TODO: Reuse caches
 name: Rust
 
 on: [push]
@@ -57,3 +58,57 @@ jobs:
         with:
           name: dist_windows
           path: installed/bin/ostdl.exe
+
+  dist_linux:
+    runs-on: ubuntu-16.04
+    env:
+      INSTALL_PREFIX: "/tmp/deps/${{ matrix.target }}"
+      PKG_CONFIG_INCLUDE_PATH: "/tmp/deps/${{ matrix.target }}/lib/pkgconfig"
+      PKG_CONFIG_ALLOW_CROSS: 1
+    strategy:
+      matrix:
+        target: [x86_64-unknown-linux-gnu, arm-unknown-linux-gnueabihf]
+    steps:
+      - uses: actions/checkout@v1
+      - name: Cache cargo registry
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache cargo index
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache cargo build
+        uses: actions/cache@v1
+        with:
+          path: target/release
+          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+      - name: Install rust target
+        run: rustup target add ${{ matrix.target }}
+      - name: Install openssl
+        run: |
+          set -ex
+          sudo apt-get update
+          if [ "${{ matrix.target }}" = "arm-unknown-linux-gnueabihf" ]; then
+            export OPENSSL_TARGET=arm-linux-gnueabihf
+            sudo apt-get install gcc-arm-linux-gnueabi libc6-dev-armel-cross
+          else
+            export OPENSSL_TARGET="${{ matrix.target }}"
+          fi
+          wget https://www.openssl.org/source/openssl-1.0.2t.tar.gz
+          tar zxvf openssl-1.0.2t.tar.gz
+
+          cd openssl-1.0.2t
+          ./Configure --prefix=$INSTALL_PREFIX os/compiler:$OPENSSL_TARGET
+          make CC="$OPENSSL_TARGET-gcc" AR="$OPENSSL_TARGET-ar r" RANLIB="$OPENSSL_TARGET-ranlib"
+          make install
+          cd ..
+      - name: Install
+        run: cargo install --path . --root=installed --target=${{ matrix.target }}
+
+      - uses: actions/upload-artifact@master
+        with:
+          name: dist_${{ matrix.target }}
+          path: installed/bin/ostdl
