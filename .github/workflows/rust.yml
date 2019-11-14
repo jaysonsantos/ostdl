@@ -3,12 +3,19 @@ name: Rust
 on: [push]
 
 jobs:
-  build:
-
-    runs-on: ubuntu-16.04
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-16.04, windows-latest]
 
     steps:
     - uses: actions/checkout@v1
+    - name: Install openssl
+      if: matrix.os == 'ubuntu-16.04'
+      run: |
+        sudo apt-get update
+        sudo apt-get install libssl-dev
     - name: Build
       run: cargo build --verbose
     - name: Run tests
