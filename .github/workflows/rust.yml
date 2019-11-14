@@ -14,6 +14,7 @@ jobs:
     - name: Install openssl
       if: matrix.os == 'ubuntu-16.04'
       run: |
+        set -ex
         sudo apt-get update
         sudo apt-get install libssl-dev
     - name: Build
