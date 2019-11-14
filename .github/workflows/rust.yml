@@ -93,7 +93,7 @@ jobs:
           sudo apt-get update
           if [ "${{ matrix.target }}" = "arm-unknown-linux-gnueabihf" ]; then
             export OPENSSL_TARGET=arm-linux-gnueabihf
-            sudo apt-get install gcc-arm-linux-gnueabi libc6-dev-armel-cross
+            sudo apt-get install gcc-arm-linux-gnueabihf libc6-dev-armel-cross
           elif [ "${{ matrix.target }}" = "x86_64-unknown-linux-gnu" ]; then
             export OPENSSL_TARGET=x86_64-linux-gnu
           else
