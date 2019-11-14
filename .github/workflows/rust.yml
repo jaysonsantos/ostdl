@@ -87,7 +87,7 @@ jobs:
           key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
       - name: Install rust target
         run: rustup target add ${{ matrix.target }}
-      - name: Install openssl
+      - name: Install
         run: |
           set -ex
           sudo apt-get update
@@ -95,7 +95,7 @@ jobs:
             export OPENSSL_TARGET=arm-linux-gnueabihf
             export OVERRIDE_TARGET="--target=${{ matrix.target }}"
             export CARGO_TARGET_ARM_UNKNOWN_LINUX_GNUEABIHF_RUNNER=true
-            export CARGO_TARGET_ARM_UNKNOWN_LINUX_GNUEABIHF_LINKER=arm-linux-gnueabi-gcc
+            export CARGO_TARGET_ARM_UNKNOWN_LINUX_GNUEABIHF_LINKER=arm-linux-gnueabihf-gcc
             sudo apt-get install gcc-arm-linux-gnueabihf libc6-dev-armel-cross
           elif [ "${{ matrix.target }}" = "x86_64-unknown-linux-gnu" ]; then
             export SKIP_CUSTOM_OPENSSL=1
