@@ -94,6 +94,8 @@ jobs:
           if [ "${{ matrix.target }}" = "arm-unknown-linux-gnueabihf" ]; then
             export OPENSSL_TARGET=arm-linux-gnueabihf
             sudo apt-get install gcc-arm-linux-gnueabi libc6-dev-armel-cross
+          elif [ "${{ matrix.target }}" = "x86_64-unknown-linux-gnu" ]; then
+            export OPENSSL_TARGET=x86_64-linux-gnu
           else
             export OPENSSL_TARGET="${{ matrix.target }}"
           fi
