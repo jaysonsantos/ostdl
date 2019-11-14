@@ -34,6 +34,7 @@ jobs:
   dist_windows:
     runs-on: windows-latest
     steps:
+      - uses: actions/checkout@v1
       - name: Cache cargo registry
         uses: actions/cache@v1
         with:
@@ -49,7 +50,6 @@ jobs:
         with:
           path: target/release
           key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
-      - uses: actions/checkout@v1
       - name: Install
         run: cargo install --path . --root=installed
 
