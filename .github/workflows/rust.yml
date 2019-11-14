@@ -62,7 +62,7 @@ jobs:
   dist_linux:
     runs-on: ubuntu-16.04
     env:
-      INSTALL_PREFIX: "/tmp/deps/${{ matrix.target }}"
+      DEPS_PREFIX: "/tmp/deps/${{ matrix.target }}"
       PKG_CONFIG_INCLUDE_PATH: "/tmp/deps/${{ matrix.target }}/lib/pkgconfig"
       PKG_CONFIG_ALLOW_CROSS: 1
     strategy:
@@ -103,7 +103,7 @@ jobs:
           tar zxvf openssl-1.0.2t.tar.gz
 
           cd openssl-1.0.2t
-          ./Configure --prefix=$INSTALL_PREFIX os/compiler:$OPENSSL_TARGET
+          ./Configure --prefix=$DEPS_PREFIX os/compiler:$OPENSSL_TARGET
           make CC="$OPENSSL_TARGET-gcc" AR="$OPENSSL_TARGET-ar r" RANLIB="$OPENSSL_TARGET-ranlib"
           make install
           cd ..
