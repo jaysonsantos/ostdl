@@ -98,20 +98,23 @@ jobs:
             export CARGO_TARGET_ARM_UNKNOWN_LINUX_GNUEABIHF_LINKER=arm-linux-gnueabi-gcc
             sudo apt-get install gcc-arm-linux-gnueabihf libc6-dev-armel-cross
           elif [ "${{ matrix.target }}" = "x86_64-unknown-linux-gnu" ]; then
-            export OPENSSL_TARGET=x86_64-linux-gnu
+            export SKIP_CUSTOM_OPENSSL=1
           else
             export OPENSSL_TARGET="${{ matrix.target }}"
           fi
-          wget https://www.openssl.org/source/openssl-1.0.2t.tar.gz
-          tar zxvf openssl-1.0.2t.tar.gz
 
-          cd openssl-1.0.2t
-          ./Configure --prefix=$DEPS_PREFIX os/compiler:$OPENSSL_TARGET
-          make CC="$OPENSSL_TARGET-gcc" AR="$OPENSSL_TARGET-ar r" RANLIB="$OPENSSL_TARGET-ranlib"
-          make install
-          cd ..
-      - name: Install
-        run: cargo install --path . --root=installed $OVERRIDE_TARGET
+          if [ -z "$SKIP_CUSTOM_OPENSSL" ]; then
+            wget https://www.openssl.org/source/openssl-1.0.2t.tar.gz
+            tar zxvf openssl-1.0.2t.tar.gz
+
+            cd openssl-1.0.2t
+            ./Configure --prefix=$DEPS_PREFIX os/compiler:$OPENSSL_TARGET
+            make CC="$OPENSSL_TARGET-gcc" AR="$OPENSSL_TARGET-ar r" RANLIB="$OPENSSL_TARGET-ranlib"
+            make install
+            cd ..
+          fi
+
+          cargo install --path . --root=installed $OVERRIDE_TARGET
 
       - uses: actions/upload-artifact@master
         with:
