@@ -1,0 +1,122 @@
+name: Publish
+on:
+  release:
+    types: [created]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-16.04, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Cache cargo registry
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache cargo index
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache cargo build
+        uses: actions/cache@v1
+        with:
+          path: target/debug
+          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+      - name: Build
+        run: cargo build --verbose
+      - name: Run tests
+        run: cargo test --verbose
+
+  dist_windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Cache cargo registry
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache cargo index
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache cargo build
+        uses: actions/cache@v1
+        with:
+          path: target/release
+          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+      - name: Install
+        run: cargo install --path . --root=installed
+
+      - uses: actions/upload-artifact@master
+        with:
+          name: dist_windows
+          path: installed/bin/ostdl.exe
+
+  dist_linux:
+    runs-on: ubuntu-16.04
+    env:
+      DEPS_PREFIX: "/tmp/deps/${{ matrix.target }}"
+      PKG_CONFIG_PATH: "/tmp/deps/${{ matrix.target }}/lib/pkgconfig"
+      PKG_CONFIG_ALLOW_CROSS: 1
+    strategy:
+      matrix:
+        target: [x86_64-unknown-linux-gnu, arm-unknown-linux-gnueabihf]
+    steps:
+      - uses: actions/checkout@v1
+      - name: Cache cargo registry
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache cargo index
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache cargo build
+        uses: actions/cache@v1
+        with:
+          path: target/release
+          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+      - name: Install rust target
+        run: rustup target add ${{ matrix.target }}
+      - name: Install
+        run: |
+          set -ex
+          sudo apt-get update
+          if [ "${{ matrix.target }}" = "arm-unknown-linux-gnueabihf" ]; then
+            export OPENSSL_TARGET=arm-linux-gnueabihf
+            export OVERRIDE_TARGET="--target=${{ matrix.target }}"
+            export CARGO_TARGET_ARM_UNKNOWN_LINUX_GNUEABIHF_RUNNER=true
+            export CARGO_TARGET_ARM_UNKNOWN_LINUX_GNUEABIHF_LINKER=arm-linux-gnueabihf-gcc
+            sudo apt-get install gcc-arm-linux-gnueabihf libc6-dev-armel-cross
+          elif [ "${{ matrix.target }}" = "x86_64-unknown-linux-gnu" ]; then
+            export SKIP_CUSTOM_OPENSSL=1
+          else
+            export OPENSSL_TARGET="${{ matrix.target }}"
+          fi
+
+          if [ -z "$SKIP_CUSTOM_OPENSSL" ]; then
+            wget https://www.openssl.org/source/openssl-1.0.2t.tar.gz
+            tar zxvf openssl-1.0.2t.tar.gz
+
+            cd openssl-1.0.2t
+            ./Configure -fPIC --prefix=$DEPS_PREFIX os/compiler:$OPENSSL_TARGET
+            make CC="$OPENSSL_TARGET-gcc" AR="$OPENSSL_TARGET-ar r" RANLIB="$OPENSSL_TARGET-ranlib"
+            make install
+            cd ..
+          fi
+
+          cargo install --path . --root=installed $OVERRIDE_TARGET
+
+      - uses: actions/upload-artifact@master
+        with:
+          name: dist_${{ matrix.target }}
+          path: installed/bin/ostdl
